@@ -329,7 +329,8 @@ class _BaseCertHandler(BaseRequestHandler):
 
         :return: The ``dxlclient.config`` contents
         """
-        with open(self._module.client_config_template_file, 'r') as f:
+        # binary mode: on Python 3 a text-mode read returns str (no decode)
+        with open(self._module.client_config_template_file, 'rb') as f:
             content = f.read().decode("utf8")
 
         content = content.replace("@BROKER_CA_BUNDLE_FILE@",
