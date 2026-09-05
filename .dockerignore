@@ -1,0 +1,6 @@
+.git
+.github
+SmartClient_v111p_2018-06-28_LGPL
+build
+dist
+*.egg-info
