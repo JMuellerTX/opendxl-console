@@ -1,16 +1,9 @@
 # pylint: disable=no-member, no-name-in-module, import-error
 
-from __future__ import absolute_import
 import glob
 import os
-import distutils.command.sdist
-import distutils.log
 import subprocess
 from setuptools import Command, setup
-import setuptools.command.sdist
-
-# Patch setuptools' sdist behaviour with distutils' sdist behaviour
-setuptools.command.sdist.sdist.run = distutils.command.sdist.sdist.run
 
 VERSION_INFO = {}
 CWD = os.path.abspath(os.path.dirname(__file__))
@@ -29,8 +22,7 @@ class LintCommand(Command):
     def finalize_options(self):
         pass
     def run(self):
-        self.announce("Running pylint for library source files and tests",
-                      level=distutils.log.INFO)
+        print("Running pylint for library source files and tests")
         subprocess.check_call(["pylint",
                                "dxlconsole/modules"] +
                               glob.glob("*.py") +
@@ -51,7 +43,7 @@ class CiCommand(Command):
     def run(self):
         self.run_command("lint")
 
-TEST_REQUIREMENTS = ["astroid<2.3.0", "pylint<=2.3.1"]
+TEST_REQUIREMENTS = ["pylint", "pytest"]
 
 DEV_REQUIREMENTS = TEST_REQUIREMENTS + ["sphinx"]
 
@@ -67,7 +59,11 @@ setup(
         "tornado",
         "dxlbootstrap>=0.1.3",
         "dxlclient",
-        "beautifulSoup4"
+        "beautifulSoup4",
+        # dxlbootstrap imports pkg_resources, which Python >= 3.12 virtual
+        # environments no longer provide by default and which was removed
+        # from setuptools (84.0.0 lacks it, 80.x still provides it)
+        "setuptools<81"
     ],
 
     tests_require=TEST_REQUIREMENTS,
@@ -172,20 +168,21 @@ setup(
 
     long_description=open('README').read(),
 
-    python_requires='>=2.7.9,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
+    python_requires='>=3.8',
 
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7"
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14"
     ],
 
     cmdclass={

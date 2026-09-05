@@ -1,9 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import os
-# pylint: disable=no-name-in-module, import-error
-from distutils.dir_util import remove_tree
-from shutil import copyfile
+from shutil import copyfile, rmtree
 
 
 def clean_dir(src_dir, directory):
@@ -35,7 +33,7 @@ SAMPLE_SRC_DIRECTORY = os.path.join(DIST_PY_FILE_LOCATION, "dxlconsole",
 # Remove the dist directory if it exists
 if os.path.exists(DIST_DIRECTORY):
     print("Removing dist directory: " + DIST_DIRECTORY + "\n")
-    remove_tree(DIST_DIRECTORY, verbose=1)
+    rmtree(DIST_DIRECTORY)
 
 # Clean the config directory
 clean_dir(CONFIG_SRC_DIRECTORY, CONFIG_DIRECTORY)

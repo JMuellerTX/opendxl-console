@@ -42,7 +42,9 @@ class OpenDxlConsole(Application):
         self._unique_id = None
         if unique_id:
             md5 = hashlib.md5()
-            md5.update(unique_id)
+            # Python 3 requires bytes (the broker passes its identifier as a
+            # command line argument)
+            md5.update(unique_id.encode("utf-8"))
             self._unique_id = md5.hexdigest()
 
     @property
