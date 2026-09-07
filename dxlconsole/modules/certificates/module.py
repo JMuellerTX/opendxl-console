@@ -435,15 +435,35 @@ class _BaseCertHandler(BaseRequestHandler):
         """
         password = 'pass:' + ca_password
 
-        # Sign the CSR with the client cert file
-        return_code = subprocess.call(
-            ['openssl', 'x509', '-req', '-passin', password,
-             '-CAcreateserial', '-days', '3650',
-             '-CA', ca_cert_file, '-CAkey', ca_key_file,
-             '-outform', 'PEM',
-             '-out', temp_cert_file.name, '-in',
-             temp_csr_file.name],
-            stderr=open(os.devnull, 'wb'))
+        # "openssl x509 -req" without an extension file issues an X.509 v1
+        # certificate: no extensions at all, not even the certificate version
+        # field. OpenSSL-based clients accept that, but strict validators do
+        # not - rustls/webpki reject v1 certificates outright
+        # (UnsupportedCertVersion) and Python >= 3.13 verifies in
+        # VERIFY_X509_STRICT mode. Issue a v3 end-entity certificate with the
+        # extensions a TLS client certificate is expected to carry; ePO issues
+        # the same set for the certificates it signs.
+        with NamedTemporaryFile(mode='w', suffix='.ext', delete=False) as ext_file:
+            ext_file.write(
+                "basicConstraints=CA:FALSE\n"
+                "keyUsage=critical,digitalSignature,keyEncipherment\n"
+                "extendedKeyUsage=clientAuth\n"
+                "subjectKeyIdentifier=hash\n"
+                "authorityKeyIdentifier=keyid,issuer\n")
+
+        try:
+            # Sign the CSR with the client cert file
+            return_code = subprocess.call(
+                ['openssl', 'x509', '-req', '-passin', password,
+                 '-CAcreateserial', '-days', '3650',
+                 '-CA', ca_cert_file, '-CAkey', ca_key_file,
+                 '-extfile', ext_file.name,
+                 '-outform', 'PEM',
+                 '-out', temp_cert_file.name, '-in',
+                 temp_csr_file.name],
+                stderr=open(os.devnull, 'wb'))
+        finally:
+            os.remove(ext_file.name)
 
         if return_code != 0:
             raise Exception("Error creating certificate")
