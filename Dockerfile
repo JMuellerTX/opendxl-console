@@ -5,7 +5,7 @@ FROM python:3.13-slim AS builder
 # (vulnerable, GHSA-6v7p-g79w-8964) and does not work on current Python
 # versions; override with a pip requirement specifier once a fixed release
 # is published.
-ARG DXL_CLIENT_PIP_SPEC="git+https://github.com/derjochenmueller/opendxl-client-python@epo-legacy"
+ARG DXL_CLIENT_PIP_SPEC="git+https://github.com/JMuellerTX/opendxl-client-python@epo-legacy"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
