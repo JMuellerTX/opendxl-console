@@ -1,0 +1,62 @@
+OpenDXL Console
+Copyright (c) McAfee, LLC and contributors
+Copyright (c) Musarubra US LLC
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+It bundles third-party components that carry their own licences:
+
+--------------------------------------------------------------------------
+Isomorphic SmartClient (LGPL Edition)
+--------------------------------------------------------------------------
+
+Component: Isomorphic SmartClient, LGPL Edition
+Version:   v11.1p_2017-08-20 (build 2017-08-20)
+Copyright: Copyright (c) 1998 and beyond Isomorphic Software, Inc.
+           All rights reserved.
+           "SmartClient" is a trademark of Isomorphic Software, Inc.
+Homepage:  https://smartclient.com/
+Download:  https://smartclient.com/product/download.jsp
+Location:  dxlconsole/web/isomorphic/
+
+Per the licence notice shipped with the component
+(dxlconsole/web/isomorphic/system/license.html), the SmartClient source
+code, the assembled modules under isomorphic/system/modules/ and the
+JavaScript and CSS files under isomorphic/skins/ are licensed under the
+terms of the GNU Lesser General Public License, version 3. Copies of that
+licence and of the GNU General Public License, which it incorporates by
+reference, are included as LICENSE.LGPL-3.0.txt and LICENSE.GPL-3.0.txt.
+
+Corresponding source
+--------------------
+
+The corresponding source for the assembled modules is distributed with
+this product, in the same package, at
+
+    dxlconsole/web/isomorphic/system/modules-debug/
+
+Those files are the unminified, commented form of the modules served from
+dxlconsole/web/isomorphic/system/modules/ and carry the same version
+string, "v11.1p_2017-08-20/LGPL Deployment". The files under
+dxlconsole/web/isomorphic/skins/ are shipped in their original form.
+
+The component is used unmodified. Nothing under dxlconsole/web/isomorphic/
+has been changed, so no modifications have to be published; should that
+ever change, the modified files remain covered by the LGPLv3 and must be
+made available on the same terms.
+
+Icon Experience collection
+--------------------------
+
+Selected 16x16 icons under isomorphic/skins/ are part of the Icon
+Experience collection (https://www.iconexperience.com). They may be used
+freely with SmartClient components, but not as part of screen designs
+separate from SmartClient components without a licence purchased from Icon
+Experience. They are not covered by the LGPLv3 grant above.
+
+--------------------------------------------------------------------------
+Base64Binary
+--------------------------------------------------------------------------
+
+dxlconsole/web/base64-binary.js is Copyright (c) 2011-2012 Daniel Guerrero
+and is licensed under the 3-clause BSD licence; see the file
+"LICENSE -Base64Binary".
