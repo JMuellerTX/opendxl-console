@@ -1,3 +1,7 @@
+# pylint: disable=too-many-lines
+# The module went past pylint's 1000-line limit when client certificates gained their X.509 v3
+# extensions. Splitting the four request handlers into modules of their own is worth doing, but
+# it is a refactor, not part of that fix.
 from __future__ import absolute_import
 from codecs import encode
 from io import BytesIO
