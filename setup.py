@@ -59,11 +59,7 @@ setup(
         "tornado",
         "dxlbootstrap>=0.1.3",
         "dxlclient",
-        "beautifulSoup4",
-        # dxlbootstrap imports pkg_resources, which Python >= 3.12 virtual
-        # environments no longer provide by default and which was removed
-        # from setuptools (84.0.0 lacks it, 80.x still provides it)
-        "setuptools<81"
+        "beautifulSoup4"
     ],
 
     tests_require=TEST_REQUIREMENTS,

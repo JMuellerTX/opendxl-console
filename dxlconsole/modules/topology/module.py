@@ -10,7 +10,6 @@ import json
 
 import tornado
 
-import pkg_resources
 
 from dxlclient import EventCallback
 from dxlclient.message import Request, Message
@@ -19,6 +18,7 @@ from dxlbootstrap.util import MessageUtils
 
 import dxlconsole.util
 from dxlconsole.handlers import BaseRequestHandler
+from dxlconsole._resources import resource_string
 from dxlconsole.module import Module
 
 # Configure local logger
@@ -64,7 +64,7 @@ class TopologyModule(Module):
 
         :return: The content of the module (JS code)
         """
-        return pkg_resources.resource_string(
+        return resource_string(
             __name__, "content.html").decode("utf8")
 
     @property

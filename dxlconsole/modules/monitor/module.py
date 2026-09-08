@@ -4,7 +4,6 @@ import threading
 
 import time
 import datetime
-import pkg_resources
 
 from dxlclient.client import DxlClient
 from dxlclient.client_config import DxlClientConfig
@@ -12,6 +11,7 @@ from dxlclient.callbacks import EventCallback
 from dxlclient.message import Request, Message
 from dxlbootstrap.util import MessageUtils
 from dxlconsole.module import Module
+from dxlconsole._resources import resource_string
 
 from .services_handler import ServiceUpdateHandler
 from .subscriptions_handler import SubscriptionsHandler
@@ -93,7 +93,7 @@ class MonitorModule(Module):
 
     @property
     def content(self):
-        content = pkg_resources.resource_string(
+        content = resource_string(
             __name__, "content.html").decode("utf8")
         return content.replace("@PORT@", str(self.app.bootstrap_app.port))
 

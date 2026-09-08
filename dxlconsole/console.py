@@ -4,7 +4,6 @@ import logging
 import uuid
 import threading
 
-import pkg_resources
 
 import tornado
 from tornado.web import RequestHandler, Application, StaticFileHandler
@@ -15,6 +14,7 @@ from tornado.ioloop import IOLoop
 from dxlclient.client_config import DxlClientConfig
 
 import dxlconsole
+from ._resources import resource_filename, resource_string
 from .modules.certificates.module import CertificateModule
 from .modules.topology.module import TopologyModule
 from .modules.broker.module import BrokerModule
@@ -57,7 +57,7 @@ class ConsoleStaticFileRequestHandler(StaticFileHandler):
             resource_path = '/'.join(("web", root))
         else:
             resource_path = '/'.join(("web", path))
-        return pkg_resources.resource_filename(__name__, resource_path)
+        return resource_filename(__name__, resource_path)
 
     def validate_absolute_path(self, root, absolute_path):
         """
@@ -88,7 +88,7 @@ class ConsoleRequestHandler(BaseRequestHandler):
         """
         HTTP GET
         """
-        console_html = pkg_resources.resource_string(
+        console_html = resource_string(
             __name__, "console.html").decode("utf8")
         console_html = console_html.replace("@VERSION@",
                                             dxlconsole.get_version())
@@ -174,7 +174,7 @@ class LoginHandler(RequestHandler):
                 self.set_status(401)
                 self.write("Invalid credentials.Check username/password")
         else:
-            console_html = pkg_resources.resource_string(
+            console_html = resource_string(
                 __name__, "login.html").decode("utf8")
             console_html = console_html.replace("@CONSOLE_NAME@",
                                                 self.application.bootstrap_app.console_name)

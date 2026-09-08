@@ -15,13 +15,13 @@ from tempfile import NamedTemporaryFile
 import traceback
 from zipfile import ZipFile
 
-import pkg_resources
 import tornado
 import tornado.httputil
 import dxlconsole.util
 
 from dxlconsole.handlers import BaseRequestHandler
 from dxlconsole.module import Module
+from dxlconsole._resources import resource_string
 from ..._compat import ConfigParser, read_file, StringIO
 
 # Configure local logger
@@ -245,7 +245,7 @@ class CertificateModule(Module):
 
         :return: The content of the module (JS code)
         """
-        return pkg_resources.resource_string(
+        return resource_string(
             __name__, "content.html").decode("utf8")
 
     @property

@@ -41,6 +41,9 @@ jobs:
         # The PyPI release of the OpenDXL Python client pins msgpack<1.0 (vulnerable)
         # and does not work on current Python versions; install the fixed fork first
         pip install "git+https://github.com/derjochenmueller/opendxl-client-python@epo-legacy"
+        # ... and the fixed dxlbootstrap, which no longer imports pkg_resources
+        # (gone from setuptools >= 82)
+        pip install "dxlbootstrap @ git+https://github.com/derjochenmueller/opendxl-bootstrap-python@master"
         pip install .[test]
 
     - name: Provision client

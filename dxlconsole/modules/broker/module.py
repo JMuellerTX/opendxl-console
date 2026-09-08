@@ -3,13 +3,13 @@ import json
 import logging
 import traceback
 
-import pkg_resources
 import tornado.httputil
 
 from dxlclient.message import Request, Message
 from dxlbootstrap.util import MessageUtils
 from dxlconsole.handlers import BaseRequestHandler
 from dxlconsole.module import Module
+from dxlconsole._resources import resource_string
 
 import dxlconsole.util
 
@@ -44,7 +44,7 @@ class BrokerModule(Module):
 
         :return: The content of the module (JS code)
         """
-        return pkg_resources.resource_string(
+        return resource_string(
             __name__, "content.html").decode("utf8")
 
     @property
