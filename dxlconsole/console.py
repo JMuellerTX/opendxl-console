@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import base64
 import logging
+import ssl
 import uuid
 import threading
 
@@ -424,9 +425,20 @@ class WebConsole(Application):
         """
         client_config = DxlClientConfig.create_dxl_config_from_file(
             self.bootstrap_app.client_config_path)
-        http_server = HTTPServer(self, ssl_options={
-            "certfile": client_config.cert_file,
-            "keyfile": client_config.private_key,
-        })
+
+        # Passing a dict here would let Tornado build a default context, which
+        # accepts whatever the Python build offers - including RSA key transport
+        # suites with no forward secrecy. This listener is where provisionconfig
+        # sends the management user name and password, and it signs certificates
+        # for the fabric, so it is the last place to take a default on trust.
+        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        ssl_ctx.minimum_version = ssl.TLSVersion.TLSv1_2
+        ssl_ctx.set_ciphers(self.bootstrap_app.ciphers)
+        ssl_ctx.load_cert_chain(client_config.cert_file,
+                                client_config.private_key)
+        logger.info("Console listener: TLS 1.2 minimum, ciphers %s",
+                    self.bootstrap_app.ciphers)
+
+        http_server = HTTPServer(self, ssl_options=ssl_ctx)
         http_server.listen(self._bootstrap_app.port)
         self._io_loop.start()

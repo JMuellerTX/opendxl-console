@@ -24,6 +24,16 @@ class OpenDxlConsole(Application):
     GENERAL_PASSWORD_PROP = "password"
     #: Whether the console is embedded in the broker
     GENERAL_LOCAL_BROKER_PROP = "localBroker"
+    #: The cipher list for the console's HTTPS listener
+    GENERAL_CIPHERS_PROP = "ciphers"
+
+    #: Forward secrecy only. This listener carries the management credentials that
+    #: `provisionconfig` sends, so a suite without forward secrecy means a future
+    #: compromise of the server key exposes every password recorded until then.
+    #: It is also what ePolicy Orchestrator 5.10 SP1 U7 presents on the same role.
+    #: TLS 1.3 needs no entry here - its three suites are a separate list and all
+    #: provide forward secrecy.
+    DEFAULT_CIPHERS = "ECDHE+AESGCM:ECDHE+CHACHA20:ECDHE+AES:!aNULL:!eNULL:!MD5"
 
     def __init__(self, config_dir, unique_id=None):
         """
@@ -39,6 +49,7 @@ class OpenDxlConsole(Application):
         self._local_broker = False
         self._username = None
         self._password = None
+        self._ciphers = self.DEFAULT_CIPHERS
         self._unique_id = None
         if unique_id:
             md5 = hashlib.md5()
@@ -100,6 +111,16 @@ class OpenDxlConsole(Application):
         :return: The console password
         """
         return self._password
+
+    @property
+    def ciphers(self):
+        """
+        Returns the cipher list for the console's HTTPS listener
+
+        :return: An OpenSSL cipher string; forward secrecy only unless the
+            configuration file overrides it
+        """
+        return self._ciphers
 
     @property
     def client(self):
@@ -172,6 +193,15 @@ class OpenDxlConsole(Application):
         if not self._password:
             raise Exception("Password not found in configuration file: {0}"
                             .format(self._app_config_path))
+
+        # Ciphers (optional; empty or absent means the forward-secrecy default)
+        try:
+            ciphers = config.get(self.GENERAL_CONFIG_SECTION,
+                                 self.GENERAL_CIPHERS_PROP)
+            if ciphers and ciphers.strip():
+                self._ciphers = ciphers.strip()
+        except Exception:
+            pass
 
     def on_dxl_connect(self):
         """
