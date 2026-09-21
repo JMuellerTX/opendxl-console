@@ -5,13 +5,13 @@ FROM python:3.13-slim AS builder
 # (vulnerable, GHSA-6v7p-g79w-8964) and does not work on current Python
 # versions; override with a pip requirement specifier once a fixed release
 # is published.
-ARG DXL_CLIENT_PIP_SPEC="git+https://github.com/JMuellerTX/opendxl-client-python@epo-legacy"
+ARG DXL_CLIENT_PIP_SPEC="git+https://github.com/JMuellerTX/opendxl-client-python@fork-2026-09-21-epo-legacy"
 
 # The dxlbootstrap this application depends on. The PyPI release imports
 # pkg_resources, which setuptools 82 dropped and a Python >= 3.12 virtual
 # environment no longer provides, so the console cannot even be imported; the
 # fork uses importlib.resources instead.
-ARG DXL_BOOTSTRAP_PIP_SPEC="git+https://github.com/JMuellerTX/opendxl-bootstrap-python@master"
+ARG DXL_BOOTSTRAP_PIP_SPEC="git+https://github.com/JMuellerTX/opendxl-bootstrap-python@fork-2026-09-21"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git \
