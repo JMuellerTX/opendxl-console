@@ -57,8 +57,8 @@ setup(
     # Requirements
     install_requires=[
         "tornado",
-        "dxlbootstrap @ git+https://github.com/JMuellerTX/opendxl-bootstrap-python@master",
-        "dxlclient @ git+https://github.com/JMuellerTX/opendxl-client-python@epo-legacy",
+        "dxlbootstrap>=0.1.3",
+        "dxlclient",
         "beautifulSoup4"
     ],
 
