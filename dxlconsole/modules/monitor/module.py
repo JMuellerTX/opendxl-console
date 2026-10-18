@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from collections import OrderedDict
 import logging
 import threading
 
@@ -37,10 +38,14 @@ class MonitorModule(Module):
     # How long to retain clients without any keep alive before evicting them
     CLIENT_RETENTION_MINUTES = 30
 
+    # Maximum number of pending request message IDs to retain for response topic lookup
+    MAX_MESSAGE_ID_TOPICS = 1000
+
     # Locks for the different dictionaries shared between Monitor Handlers
     _service_dict_lock = threading.Lock()
     _client_dict_lock = threading.Lock()
     _pending_messages_lock = threading.Lock()
+    _message_id_topics_lock = threading.Lock()
 
     def __init__(self, app):
         super(MonitorModule, self).__init__(
@@ -56,7 +61,7 @@ class MonitorModule(Module):
         # dictionary to cache service state
         self._services = {}
 
-        self._message_id_topics = {}
+        self._message_id_topics = OrderedDict()
 
         self._client_config = DxlClientConfig.create_dxl_config_from_file(
             self.app.bootstrap_app.client_config_path)
@@ -105,6 +110,18 @@ class MonitorModule(Module):
     @property
     def message_id_topics(self):
         return self._message_id_topics
+
+    def record_message_topic(self, message_id, topic):
+        """
+        Records the original request topic for a message ID, evicting the
+        oldest entry when the cache exceeds ``MAX_MESSAGE_ID_TOPICS``.
+        """
+        with self._message_id_topics_lock:
+            if message_id in self._message_id_topics:
+                del self._message_id_topics[message_id]
+            self._message_id_topics[message_id] = topic
+            while len(self._message_id_topics) > self.MAX_MESSAGE_ID_TOPICS:
+                self._message_id_topics.popitem(last=False)
 
     @property
     def client_config(self):
@@ -177,7 +194,21 @@ class MonitorModule(Module):
         """
         with self._pending_messages_lock:
             if client_id in self._pending_messages:
-                return self._pending_messages[client_id]
+                return list(self._pending_messages[client_id])
+        return None
+
+    def drain_messages(self, client_id):
+        """
+        Atomically retrieves and clears the pending messages for the given client.
+
+        :param client_id: the client to retrieve and clear messages for
+        :return: a List of messages for the client, or None
+        """
+        with self._pending_messages_lock:
+            if client_id in self._pending_messages:
+                messages = self._pending_messages[client_id]
+                self._pending_messages[client_id] = []
+                return messages
         return None
 
     def clear_messages(self, client_id):
@@ -296,14 +327,14 @@ class MonitorModule(Module):
         :param message: The DXL message
         :return:  The topic to use
         """
-        if (message.message_type == Message.MESSAGE_TYPE_RESPONSE or
-                message.message_type == Message.MESSAGE_TYPE_ERROR) and \
-                        message.request_message_id in self.message_id_topics:
-            topic = self.message_id_topics[message.request_message_id]
-            del self.message_id_topics[message.request_message_id]
-        else:
-            topic = message.destination_topic
-        return topic
+        if message.message_type == Message.MESSAGE_TYPE_RESPONSE or \
+                message.message_type == Message.MESSAGE_TYPE_ERROR:
+            with self._message_id_topics_lock:
+                topic = self._message_id_topics.pop(
+                    message.request_message_id, None)
+            if topic is not None:
+                return topic
+        return message.destination_topic
 
 
 class _ServiceEventCallback(EventCallback):

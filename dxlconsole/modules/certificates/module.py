@@ -426,7 +426,8 @@ class _BaseCertHandler(BaseRequestHandler):
 
     @staticmethod
     def _create_cert(temp_csr_file, temp_cert_file,
-                     ca_cert_file, ca_key_file, ca_password):
+                     ca_cert_file, ca_key_file, ca_password,
+                     config_type="client"):
         """
         Create a certificate signed by the supplied CA.
 
@@ -435,9 +436,12 @@ class _BaseCertHandler(BaseRequestHandler):
         :param ca_cert_file: Certificate file for the CA issuing the certificate
         :param ca_key_file: Private key file for the CA issuing the certificate
         :param ca_password: Password used to unencrypt the CA private key file
+        :param config_type: Type of certificate ("client" or "broker")
         :raise Exception: Error running the openssl command to create the certificate
         """
         password = 'pass:' + ca_password
+        ext_key_usage = "serverAuth,clientAuth" \
+            if config_type == "broker" else "clientAuth"
 
         # "openssl x509 -req" without an extension file issues an X.509 v1
         # certificate: no extensions at all, not even the certificate version
@@ -445,13 +449,13 @@ class _BaseCertHandler(BaseRequestHandler):
         # not - rustls/webpki reject v1 certificates outright
         # (UnsupportedCertVersion) and Python >= 3.13 verifies in
         # VERIFY_X509_STRICT mode. Issue a v3 end-entity certificate with the
-        # extensions a TLS client certificate is expected to carry; ePO issues
-        # the same set for the certificates it signs.
+        # extensions a TLS client/server certificate is expected to carry; ePO
+        # issues the same set for the certificates it signs.
         with NamedTemporaryFile(mode='w', suffix='.ext', delete=False) as ext_file:
             ext_file.write(
                 "basicConstraints=CA:FALSE\n"
                 "keyUsage=critical,digitalSignature,keyEncipherment\n"
-                "extendedKeyUsage=clientAuth\n"
+                "extendedKeyUsage=" + ext_key_usage + "\n"
                 "subjectKeyIdentifier=hash\n"
                 "authorityKeyIdentifier=keyid,issuer\n")
 
@@ -465,7 +469,7 @@ class _BaseCertHandler(BaseRequestHandler):
                  '-outform', 'PEM',
                  '-out', temp_cert_file.name, '-in',
                  temp_csr_file.name],
-                stderr=open(os.devnull, 'wb'))
+                stderr=subprocess.DEVNULL)
         finally:
             os.remove(ext_file.name)
 
@@ -495,7 +499,7 @@ class GenerateCertHandler(_BaseCertHandler):
 
     def _generate_cert(self, subject, temp_key_file, temp_csr_file,
                        temp_cert_file, ca_cert_file, ca_key_file,
-                       ca_password):
+                       ca_password, config_type="client"):
         """
         Uses openssl to create a csr with the info provided and sign the cert with the CA key
         The cert is written to the disk using the specified file names
@@ -507,16 +511,16 @@ class GenerateCertHandler(_BaseCertHandler):
         :param ca_cert_file: Certificate file for the CA issuing the certificate
         :param ca_key_file: Private key file for the CA issuing the certificate
         :param ca_password: Password used to unencrypt the CA private key file
+        :param config_type: Type of certificate ("client" or "broker")
         """
 
         # Create the private key and csr using openssl command
-        # stderr=open(os.devnull, 'wb') to suppress the err output from the openssl command
         return_code = subprocess.call(
             ['openssl', 'req', '-nodes', '-new', '-newkey', 'rsa:2048',
              '-keyout', temp_key_file.name, '-out', temp_csr_file.name,
              '-subj',
              subject],
-            stderr=open(os.devnull, 'wb'))
+            stderr=subprocess.DEVNULL)
         if return_code != 0:
             raise Exception("Error creating key and csr")
 
@@ -525,7 +529,8 @@ class GenerateCertHandler(_BaseCertHandler):
 
         # call openssl command to create the cert
         self._create_cert(temp_csr_file, temp_cert_file,
-                          ca_cert_file, ca_key_file, ca_password)
+                          ca_cert_file, ca_key_file, ca_password,
+                          config_type)
 
     @staticmethod
     def _generate_subject_str_from_request(request_params):
@@ -705,7 +710,7 @@ class GenerateCertHandler(_BaseCertHandler):
             # generate the cert with the subject string using the temp files above
             self._generate_cert(subject, temp_key_file, temp_csr_file,
                                 temp_cert_file, ca_cert_file, ca_key_file,
-                                ca_password)
+                                ca_password, config_type)
 
             # Create the cert zip file package
             contents = self._create_cert_zip_file(temp_cert_file,
@@ -995,6 +1000,7 @@ class GetBrokerListManagementServiceHandler(_BaseCertHandler):
             # build the json
             json_data = {"brokers": brokers,
                          "brokersWebSockets": brokers_web_sockets,
+                         "webSocketBrokers": brokers_web_sockets,
                          "certVersion": 0}
             # this the json of our response
             json_string_data = json.dumps(json_data)

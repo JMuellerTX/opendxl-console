@@ -65,7 +65,7 @@ class MessagesHandler(BaseRequestHandler):
 
         response = response_wrapper["response"]
 
-        messages = self._module.get_messages(client_id)
+        messages = self._module.drain_messages(client_id)
 
         if messages:
             for message in messages:
@@ -125,8 +125,6 @@ class MessagesHandler(BaseRequestHandler):
                                    "</pre></code>"
                 }
                 response["data"].append(message_entry)
-
-        self._module.clear_messages(client_id)
 
         logger.debug(
             "Message handler response: %s", json.dumps(response_wrapper))

@@ -164,13 +164,10 @@ class LoginHandler(RequestHandler):
         if auth_header is not None:
             auth_decoded = base64.b64decode(auth_header[6:]).decode('utf8')
             username, password = auth_decoded.split(':', 1)
-            details = ""
-            for values in self.request.arguments.values():
-                details += ",".join([value.decode("utf8") for value in values])
             if username == self.application.bootstrap_app.username and \
                     password == self.application.bootstrap_app.password:
                 self.set_secure_cookie(self.application.bootstrap_app.user_cookie_name, username)
-                self.redirect(details)
+                self.redirect(self.get_argument("next", "/"))
             else:
                 self.set_status(401)
                 self.write("Invalid credentials.Check username/password")
@@ -364,9 +361,9 @@ class WebConsole(Application):
         :param message: the message to send
         """
         with self._web_socket_dict_lock:
-            self.io_loop.add_callback(
-                self._web_socket_dict[client_id].write_message,
-                message)
+            ws = self._web_socket_dict.get(client_id)
+            if ws is not None:
+                self.io_loop.add_callback(ws.write_message, message)
 
     def send_all_web_socket_message(self, message):
         """

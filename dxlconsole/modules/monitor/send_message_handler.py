@@ -65,7 +65,7 @@ class SendMessageHandler(BaseRequestHandler):
                     if request_params['serviceId'] is not None and \
                             request_params['serviceId'] != "":
                         req.service_id = request_params['serviceId']
-                self._module.message_id_topics[req.message_id] = message_topic
+                self._module.record_message_topic(req.message_id, message_topic)
                 client.async_request(req)
                 message_id = req.message_id
 
