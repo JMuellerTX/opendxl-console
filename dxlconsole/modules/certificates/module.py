@@ -534,7 +534,10 @@ class GenerateCertHandler(_BaseCertHandler):
 
     @staticmethod
     def _sanitize_rdn_value(value):
-        return re.sub(r'[/\r\n\x00]', '', value).strip()
+        if value is None:
+            return None
+        cleaned = re.sub(r'[/\r\n\x00]', '', str(value)).strip()
+        return cleaned if cleaned else None
 
     @staticmethod
     def _validate_common_name(common_name):

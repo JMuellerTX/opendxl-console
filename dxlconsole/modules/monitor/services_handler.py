@@ -45,9 +45,11 @@ class ServiceUpdateHandler(BaseRequestHandler):
                      "registrationTime": service.get("registrationTime"),
                      "ttlMins": service.get("ttlMins"),
                      "unauthorizedChannels": service.get("unauthorizedChannels"),
+                     "unauthorizedTopics": list(service.get("unauthorizedChannels") or []),
                      "clientGuid": service.get("clientGuid"),
                      "certificates": service.get("certificates"),
                      "requestChannels": service.get("requestChannels"),
+                     "requestTopics": list(service.get("requestChannels") or []),
                      "brokerGuid": service.get("brokerGuid"),
                      "local": service.get("local"),
                      "metaData": "<pre><code>" +

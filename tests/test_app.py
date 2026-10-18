@@ -153,6 +153,19 @@ def test_cert_subject_sanitization():
         "/C=US/ST=CAO=injected/L=SJ/O=OrgOU=evil/OU=Unit"
     )
 
+    empty_opts_subj = GenerateCertHandler._generate_subject_str_from_request(
+        {
+            "cn": "valid-client",
+            "email": "",
+            "country": "",
+            "state": "   ",
+            "locality": "",
+            "org": "",
+            "ou": "",
+        }
+    )
+    assert empty_opts_subj == "/CN=valid-client"
+
 
 def test_topology_broker_registry_escapes_client_id():
     import json
