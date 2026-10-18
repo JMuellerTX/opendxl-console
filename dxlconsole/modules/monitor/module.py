@@ -217,7 +217,12 @@ class MonitorModule(Module):
                                     minutes=self.CLIENT_RETENTION_MINUTES)):
                         logger.debug(
                             "Evicting DXL client for client_id: %s", key)
-                        del self._client_dict[key]
+                        client_entry = self._client_dict.pop(key)
+                        try:
+                            client_entry[0].destroy()
+                        except Exception:
+                            logger.exception(
+                                "Error destroying evicted DXL client: %s", key)
 
             time.sleep(5)
 

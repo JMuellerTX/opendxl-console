@@ -168,7 +168,9 @@ class BrokerRegistryQueryHandler(BaseRequestHandler):
         self.write(json.dumps(response_wrapper))
 
     def _build_connected_broker_list(self, current_broker, brokers, connected_broker_list):
-        broker = brokers.pop(current_broker)
+        broker = brokers.pop(current_broker, None)
+        if not broker:
+            return
         logger.debug("Adding broker, brokerGuid: %s", current_broker)
         entry = {"brokerId": broker.get("guid"),
                  "connectionLimit": str(broker.get("connectionLimit")),

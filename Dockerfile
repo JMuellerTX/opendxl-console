@@ -31,9 +31,11 @@ RUN pip wheel --no-cache-dir -w /tmp/wheels "${DXL_CLIENT_PIP_SPEC}" "${DXL_BOOT
 # Runtime image
 FROM python:3.13-slim
 
-VOLUME ["/opt/dxlconsole-config"]
-
 EXPOSE 8443
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl iproute2 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install application package and its dependencies
 COPY --from=builder /tmp/wheels /tmp/wheels
@@ -61,5 +63,7 @@ RUN useradd --system --create-home --shell /usr/sbin/nologin --uid 10001 dxl \
     && mkdir -p /opt/dxlconsole-config \
     && chown dxl:dxl /opt/dxlconsole-config
 USER dxl
+
+VOLUME ["/opt/dxlconsole-config"]
 
 CMD ["python", "-m", "dxlconsole", "/opt/dxlconsole-config"]

@@ -163,7 +163,7 @@ class LoginHandler(RequestHandler):
         auth_header = self.request.headers.get('Authorization')
         if auth_header is not None:
             auth_decoded = base64.b64decode(auth_header[6:]).decode('utf8')
-            username, password = auth_decoded.split(':', 2)
+            username, password = auth_decoded.split(':', 1)
             details = ""
             for values in self.request.arguments.values():
                 details += ",".join([value.decode("utf8") for value in values])
