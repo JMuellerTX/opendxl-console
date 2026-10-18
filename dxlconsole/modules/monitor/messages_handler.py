@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import logging
 
 import tornado
+import tornado.escape
 from bs4 import BeautifulSoup
 from dxlbootstrap.util import MessageUtils
 from dxlclient import Message, json
@@ -78,7 +79,7 @@ class MessagesHandler(BaseRequestHandler):
                     original_payload = payload
                 else:
                     decoded_payload = MessageUtils.decode_payload(message)
-                    original_payload = decoded_payload
+                    original_payload = tornado.escape.xhtml_escape(decoded_payload)
                     try:
                         payload = "<pre><code>" + \
                                   self.escape(
@@ -88,14 +89,13 @@ class MessagesHandler(BaseRequestHandler):
                                   + "</pre></code>"
                     except Exception:
                         try:
-                            xml_payload = BeautifulSoup(original_payload,
+                            xml_payload = BeautifulSoup(decoded_payload,
                                                         "html.parser")
                             payload = "<pre lang='xml'><code>" + self.escape(
                                 xml_payload.prettify()) + "</code></pre>"
-                            original_payload = self.escape(original_payload)
                         except Exception as ex:
                             logger.exception(ex)
-                            payload = original_payload
+                            payload = tornado.escape.xhtml_escape(decoded_payload)
                     if len(payload) > self._MAX_DETAILS_PAYLOAD_LENGTH:
                         payload = payload[0:self._MAX_DETAILS_PAYLOAD_LENGTH] + \
                                   " ..."
@@ -111,14 +111,14 @@ class MessagesHandler(BaseRequestHandler):
                     else "Unknown"
 
                 message_entry = {
-                    'topic': topic,
+                    'topic': tornado.escape.xhtml_escape(topic),
                     'received': '',
-                    'id': message.message_id,
+                    'id': tornado.escape.xhtml_escape(message.message_id),
                     'type': message_type,
                     'payload': payload,
                     'originalPayload': original_payload,
-                    'sourceBroker': message.source_broker_id,
-                    'sourceClient': message.source_client_id,
+                    'sourceBroker': tornado.escape.xhtml_escape(message.source_broker_id),
+                    'sourceClient': tornado.escape.xhtml_escape(message.source_client_id),
                     'otherFields': "<pre><code>" +
                                    self.escape(MessageUtils.dict_to_json(
                                        message.other_fields, True)) +

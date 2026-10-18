@@ -82,3 +82,96 @@ def test_monitor_drain_messages_and_bounded_topic_cache():
         MonitorModule.MAX_MESSAGE_ID_TOPICS + 4
     )
     assert resp.request_message_id not in monitor.message_id_topics
+
+    for i in range(MonitorModule.MAX_PENDING_MESSAGES + 10):
+        monitor.queue_message("msg-{}".format(i), "c-bounded")
+    bounded = monitor.drain_messages("c-bounded")
+    assert len(bounded) == MonitorModule.MAX_PENDING_MESSAGES
+    assert bounded[0] == "msg-10"
+
+
+def test_static_file_handler_prevents_path_traversal(tmp_path):
+    import os
+    import pytest
+    from tornado.web import HTTPError
+    from dxlconsole.console import ConsoleStaticFileRequestHandler
+    from dxlconsole._resources import resource_filename
+
+    handler = ConsoleStaticFileRequestHandler.__new__(
+        ConsoleStaticFileRequestHandler
+    )
+    web_root = os.path.realpath(resource_filename("dxlconsole", "web"))
+    favicon_path = os.path.join(web_root, "images", "favicon.ico")
+    assert handler.validate_absolute_path("", favicon_path) == os.path.realpath(
+        favicon_path
+    )
+
+    with pytest.raises(HTTPError) as exc_info:
+        handler.validate_absolute_path("", str(tmp_path / "secret.txt"))
+    assert exc_info.value.status_code == 403
+
+    with pytest.raises(HTTPError) as exc_info:
+        handler.validate_absolute_path(
+            "", os.path.join(web_root, "..", "console.py")
+        )
+    assert exc_info.value.status_code == 403
+
+    with pytest.raises(HTTPError) as exc_info:
+        handler.validate_absolute_path("", web_root)
+    assert exc_info.value.status_code == 403
+
+    with pytest.raises(HTTPError) as exc_info:
+        handler.validate_absolute_path(
+            "", os.path.join(web_root, "nonexistent.file")
+        )
+    assert exc_info.value.status_code == 404
+
+
+def test_cert_subject_sanitization():
+    import pytest
+    from dxlconsole.modules.certificates.module import GenerateCertHandler
+
+    for bad_cn in ("../evil", "a/b", "a\\b", "bad\x00cn", "bad\ncn", ""):
+        with pytest.raises(Exception):
+            GenerateCertHandler._generate_subject_str_from_request(
+                {"cn": bad_cn}
+            )
+
+    subj = GenerateCertHandler._generate_subject_str_from_request(
+        {
+            "cn": "valid-client",
+            "email": "user-email/CN=injected\r\n",
+            "country": "US",
+            "state": "CA/O=injected",
+            "locality": "SJ\x00",
+            "org": "Org/OU=evil",
+            "ou": "Unit\n",
+        }
+    )
+    assert subj == (
+        "/emailAddress=user-emailCN=injected/CN=valid-client"
+        "/C=US/ST=CAO=injected/L=SJ/O=OrgOU=evil/OU=Unit"
+    )
+
+
+def test_topology_broker_registry_escapes_client_id():
+    import json
+    from dxlclient.message import ErrorResponse, Request
+    from dxlconsole.modules.topology.module import TopologyModule
+
+    captured = []
+
+    class FakeClient(object):
+        def sync_request(self, req, timeout):
+            captured.append(req.payload)
+            return ErrorResponse(Request("/test"), error_code=1, error_message="err")
+
+    class FakeApp(object):
+        dxl_service_client = FakeClient()
+
+    topo = TopologyModule.__new__(TopologyModule)
+    topo._app = FakeApp()
+    inj = '"} , "injected": "1'
+    topo.get_broker_registry(inj)
+    assert json.loads(captured[0]) == {"brokerGuid": inj}
+

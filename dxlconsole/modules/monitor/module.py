@@ -41,6 +41,9 @@ class MonitorModule(Module):
     # Maximum number of pending request message IDs to retain for response topic lookup
     MAX_MESSAGE_ID_TOPICS = 1000
 
+    # Maximum number of pending messages to retain per client session
+    MAX_PENDING_MESSAGES = 1000
+
     # Locks for the different dictionaries shared between Monitor Handlers
     _service_dict_lock = threading.Lock()
     _client_dict_lock = threading.Lock()
@@ -182,6 +185,9 @@ class MonitorModule(Module):
             if client_id not in self._pending_messages:
                 self._pending_messages[client_id] = []
 
+            while len(self._pending_messages[client_id]) >= self.MAX_PENDING_MESSAGES:
+                self._pending_messages[client_id].pop(0)
+
             self._pending_messages[client_id].append(message)
 
     def get_messages(self, client_id):
@@ -249,6 +255,8 @@ class MonitorModule(Module):
                         logger.debug(
                             "Evicting DXL client for client_id: %s", key)
                         client_entry = self._client_dict.pop(key)
+                        with self._pending_messages_lock:
+                            self._pending_messages.pop(key, None)
                         try:
                             client_entry[0].destroy()
                         except Exception:

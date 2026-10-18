@@ -87,7 +87,7 @@ class TopologyModule(Module):
         req = Request(TopologyModule.BROKER_REGISTRY_QUERY_TOPIC)
 
         if client_id:
-            req.payload = "{ \"brokerGuid\":\"" + client_id + "\"}"
+            req.payload = json.dumps({"brokerGuid": client_id})
         else:
             req.payload = "{}"
 

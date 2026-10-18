@@ -1,13 +1,15 @@
 from __future__ import absolute_import
 import base64
+import hmac
 import logging
+import os
 import ssl
 import uuid
 import threading
 
 
 import tornado
-from tornado.web import RequestHandler, Application, StaticFileHandler
+from tornado.web import RequestHandler, Application, StaticFileHandler, HTTPError
 from tornado.httpserver import HTTPServer
 from tornado.websocket import WebSocketHandler
 from tornado.ioloop import IOLoop
@@ -67,8 +69,15 @@ class ConsoleStaticFileRequestHandler(StaticFileHandler):
         :param root: The root path
         :param absolute_path: The absolute path
         """
-        # Use the absolute path we already determined
-        return absolute_path
+        web_root = os.path.realpath(resource_filename(__name__, "web"))
+        real_path = os.path.realpath(absolute_path)
+        if not (real_path == web_root or real_path.startswith(web_root + os.sep)):
+            raise HTTPError(403)
+        if not os.path.exists(real_path):
+            raise HTTPError(404)
+        if not os.path.isfile(real_path):
+            raise HTTPError(403)
+        return real_path
 
 
 class ConsoleRequestHandler(BaseRequestHandler):
@@ -162,12 +171,31 @@ class LoginHandler(RequestHandler):
         """
         auth_header = self.request.headers.get('Authorization')
         if auth_header is not None:
-            auth_decoded = base64.b64decode(auth_header[6:]).decode('utf8')
-            username, password = auth_decoded.split(':', 1)
-            if username == self.application.bootstrap_app.username and \
-                    password == self.application.bootstrap_app.password:
-                self.set_secure_cookie(self.application.bootstrap_app.user_cookie_name, username)
-                self.redirect(self.get_argument("next", "/"))
+            authenticated = False
+            username = ""
+            try:
+                auth_decoded = base64.b64decode(auth_header[6:]).decode('utf8')
+                username, password = auth_decoded.split(':', 1)
+                authenticated = (
+                    hmac.compare_digest(
+                        username, self.application.bootstrap_app.username) and
+                    hmac.compare_digest(
+                        password, self.application.bootstrap_app.password)
+                )
+            except Exception:
+                authenticated = False
+            if authenticated:
+                self.set_secure_cookie(
+                    self.application.bootstrap_app.user_cookie_name,
+                    username,
+                    httponly=True,
+                    secure=True)
+                next_url = self.get_argument("next", "/")
+                if not next_url.startswith("/") or \
+                        next_url.startswith("//") or \
+                        next_url.startswith("/\\"):
+                    next_url = "/"
+                self.redirect(next_url)
             else:
                 self.set_status(401)
                 self.write("Invalid credentials.Check username/password")
@@ -184,10 +212,12 @@ class LoginHandler(RequestHandler):
         """
         name = self.get_argument("username")
         password = self.get_argument("password")
-        if name == self.application.bootstrap_app.username and \
-                password == self.application.bootstrap_app.password:
+        if hmac.compare_digest(name, self.application.bootstrap_app.username) and \
+                hmac.compare_digest(password, self.application.bootstrap_app.password):
             self.set_secure_cookie(self.application.bootstrap_app.user_cookie_name,
-                                   self.get_argument("username"))
+                                   self.get_argument("username"),
+                                   httponly=True,
+                                   secure=True)
             self.redirect("/")
         else:
             self.redirect("/login")

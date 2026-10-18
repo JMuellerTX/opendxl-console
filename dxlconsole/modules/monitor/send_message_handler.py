@@ -3,6 +3,7 @@ import traceback
 
 import logging
 import tornado
+import tornado.escape
 from dxlclient import Event, Request, json
 
 from dxlconsole.handlers import BaseRequestHandler
@@ -69,9 +70,12 @@ class SendMessageHandler(BaseRequestHandler):
                 client.async_request(req)
                 message_id = req.message_id
 
-            self.write("Message successfully sent.&nbsp;&nbsp;&nbsp;[ID : " + message_id + "]")
+            self.write(
+                "Message successfully sent.&nbsp;&nbsp;&nbsp;[ID : " +
+                tornado.escape.xhtml_escape(message_id) + "]")
         except Exception as ex:
             logger.error("Exception while processing send message request. %s",
                          ex)
             logger.error(traceback.format_exc())
-            self.write("Failed to send message: " + str(ex))
+            self.write("Failed to send message: " +
+                       tornado.escape.xhtml_escape(str(ex)))

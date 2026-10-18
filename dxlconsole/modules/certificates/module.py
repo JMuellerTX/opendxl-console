@@ -533,6 +533,19 @@ class GenerateCertHandler(_BaseCertHandler):
                           config_type)
 
     @staticmethod
+    def _sanitize_rdn_value(value):
+        return re.sub(r'[/\r\n\x00]', '', value).strip()
+
+    @staticmethod
+    def _validate_common_name(common_name):
+        if not common_name or \
+                '/' in common_name or \
+                '\\' in common_name or \
+                '..' in common_name or \
+                any(ord(ch) < 32 or ord(ch) == 127 for ch in common_name):
+            raise Exception("Invalid common name specified")
+
+    @staticmethod
     def _generate_subject_str_from_request(request_params):
         """
         Reads the parameters from the requests and builds the subject string for the certificate
@@ -541,18 +554,20 @@ class GenerateCertHandler(_BaseCertHandler):
         :return: subject string
         """
 
-        if 'cn' in request_params:
+        if 'cn' in request_params and request_params['cn'] is not None:
             common_name = request_params['cn'].strip()
-            if common_name is None:
+            if not common_name:
                 raise Exception("No common name specified")
-
         else:
             raise Exception("No common name specified")
 
+        GenerateCertHandler._validate_common_name(common_name)
+
         # weird quirk of openssl. It wants email first if present
         email = None
-        if 'email' in request_params:
-            email = request_params['email'].strip()
+        if 'email' in request_params and request_params['email'] is not None:
+            email = GenerateCertHandler._sanitize_rdn_value(
+                request_params['email'])
 
         subject = ''
         if email is not None:
@@ -562,8 +577,9 @@ class GenerateCertHandler(_BaseCertHandler):
 
         # this has to be 2 chars
         country = None
-        if 'country' in request_params:
-            country = request_params['country'].strip()
+        if 'country' in request_params and request_params['country'] is not None:
+            country = GenerateCertHandler._sanitize_rdn_value(
+                request_params['country'])
 
         # openssl expects Country to have maxsize of 2.
         # asn1 encoding routines:ASN1_mbstring_ncopy:string too
@@ -572,20 +588,24 @@ class GenerateCertHandler(_BaseCertHandler):
             raise Exception("Country Name has to be 2 characters")
 
         state = None
-        if 'state' in request_params:
-            state = request_params['state'].strip()
+        if 'state' in request_params and request_params['state'] is not None:
+            state = GenerateCertHandler._sanitize_rdn_value(
+                request_params['state'])
 
         locality = None
-        if 'locality' in request_params:
-            locality = request_params['locality'].strip()
+        if 'locality' in request_params and request_params['locality'] is not None:
+            locality = GenerateCertHandler._sanitize_rdn_value(
+                request_params['locality'])
 
         org = None
-        if 'org' in request_params:
-            org = request_params['org'].strip()
+        if 'org' in request_params and request_params['org'] is not None:
+            org = GenerateCertHandler._sanitize_rdn_value(
+                request_params['org'])
 
         org_unit = None
-        if 'ou' in request_params:
-            org_unit = request_params['ou'].strip()
+        if 'ou' in request_params and request_params['ou'] is not None:
+            org_unit = GenerateCertHandler._sanitize_rdn_value(
+                request_params['ou'])
 
         if country is not None:
             subject += "/C=" + country

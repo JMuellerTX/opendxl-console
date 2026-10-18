@@ -3,6 +3,7 @@ import json
 
 import logging
 import tornado
+import tornado.escape
 import dxlconsole.util
 
 from dxlconsole.handlers import BaseRequestHandler
@@ -50,7 +51,8 @@ class ServiceUpdateHandler(BaseRequestHandler):
                      "brokerGuid": service.get("brokerGuid"),
                      "local": service.get("local"),
                      "metaData": "<pre><code>" +
-                                 json.dumps(service.get("metaData"), indent=4, sort_keys=True)
+                                 tornado.escape.xhtml_escape(
+                                     json.dumps(service.get("metaData"), indent=4, sort_keys=True))
                                  + "</code></pre>"}
             response["data"].append(entry)
 
